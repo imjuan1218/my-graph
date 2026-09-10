@@ -81,6 +81,17 @@ if selected_movie:
         f"'{selected_movie}'은(는) 상영 기간 동안 최고 일일 관객수 **{movie_df['일관객'].max():,}명**을 기록하였으며, "
         f"시간이 지남에 따라 관객수가 어떻게 변화하고 추세가 꺾이는지 한눈에 파악할 수 있습니다."
     )
+# 사용자가 직접 문구를 작성하여 메모할 수 있는 공간
+user_insight_2 = st.text_input(
+    "📝 이 그래프로 알 수 있는 것 (직접 작성):",
+    placeholder="구역 2 그래프 분석 내용을 작성하세요.",
+    key="insight_zone_2",
+)
+
+if user_insight_2:
+    st.info(f"💡 **이 그래프로 알 수 있는 것:** {user_insight_2}")
+else:
+    st.caption("위 입력 창에 그래프 분석 내용을 직접 입력해 보세요.")
 
 st.divider()
 
@@ -94,14 +105,3 @@ st.caption("이곳에는 월별/요일별 박스오피스 종합 추이 등 새�
 # ----------------------------------------------------
 st.header("📌 구역 2: (추가 예정 구역)")
 
-# 사용자가 직접 문구를 작성하여 메모할 수 있는 공간
-user_insight_2 = st.text_input(
-    "📝 이 그래프로 알 수 있는 것 (직접 작성):",
-    placeholder="구역 2 그래프 분석 내용을 작성하세요.",
-    key="insight_zone_2",
-)
-
-if user_insight_2:
-    st.info(f"💡 **이 그래프로 알 수 있는 것:** {user_insight_2}")
-else:
-    st.caption("위 입력 창에 그래프 분석 내용을 직접 입력해 보세요.")
