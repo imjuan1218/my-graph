@@ -95,15 +95,6 @@ else:
 
 st.divider()
 
-# ----------------------------------------------------
-# 구역 2: 향후 새로운 시간 관련 그래프 추가 영역
-# ----------------------------------------------------
-st.header("📌 구역 2: (추가 예정 구역)")
-st.caption("이곳에는 월별/요일별 박스오피스 종합 추이 등 새로운 시간 축 그래프가 추가될 예정입니다.")
-# ----------------------------------------------------
-# 구역 2: 향후 새로운 시간 관련 그래프 추가 및 분석 영역
-# ----------------------------------------------------
-st.header("📌 구역 2: (추가 예정 구역)")
 
 # ----------------------------------------------------
 # 구역 2: 일관객 합계 상위 5개 영화의 일관객 추이 비교
@@ -225,5 +216,148 @@ user_insight_3 = st.text_input(
 
 if user_insight_3:
     st.info(f"💡 **이 그래프로 알 수 있는 것:** {user_insight_3}")
+else:
+    st.caption("위 입력 창에 그래프 분석 내용을 직접 입력해 보세요.")
+
+
+# ----------------------------------------------------
+# 구역 4: 이 기간 일관객 합계 TOP 10 영화 (가로 막대그래프)
+# ----------------------------------------------------
+st.header("📌 구역 4: 기간 내 관객수 TOP 10 영화")
+
+# 1. 영화별 총 관객수 합계 및 10위권 진입 일수(날수) 집계
+top10_summary = (
+    df.groupby("영화명")
+    .agg(
+        총관객수=("일관객", "sum"),
+        진입일수=("날짜", "nunique"),  # 10위권에 든 일수
+    )
+    .reset_index()
+)
+
+# 2. 총관객수 기준 상위 10개 영화 추출 및 관객수 적은 순 정렬 (그래프 위쪽이 1위가 되도록)
+top10_movies_df = top10_summary.nlargest(10, "총관객수").sort_values(
+    "총관객수", ascending=True
+)
+
+# 3. Plotly 가로 막대그래프 생성
+fig4 = px.bar(
+    top10_movies_df,
+    x="총관객수",
+    y="영화명",
+    orientation="h",
+    title="기간 내 일관객 합계 TOP 10 영화",
+    labels={
+        "총관객수": "기간 내 총 관객수(명)",
+        "영화명": "영화 제목",
+        "진입일수": "10위권 진입 일수",
+    },
+    text_auto=",",  # 막대 끝에 관객수 표기 (천 단위 쉼표)
+    hover_data={"진입일수": True},  # 마우스 호버 시 10위권 진입 일수 포함
+)
+
+# 마우스 호버(Hover) 시 세부 정보 포맷팅
+fig4.update_traces(
+    hovertemplate="<b>영화명</b>: %{y}<br><b>기간 내 총 관객수</b>: %{x:,}명<br><b>10위권 진입 일수</b>: %{customdata[0]}일<extra></extra>"
+)
+
+# 레이아웃 설정
+fig4.update_layout(
+    xaxis_title="기간 내 총 관객수(명)",
+    yaxis_title="영화 제목",
+    showlegend=False,
+)
+
+# 그래프 출력
+st.plotly_chart(fig4, use_container_width=True)
+
+# 4. 사용자가 직접 작성하는 '이 그래프로 알 수 있는 것' 영역
+user_insight_4 = st.text_input(
+    "📝 이 그래프로 알 수 있는 것 (직접 작성):",
+    placeholder="예: 10위권에 장기 집권(진입 일수)한 영화일수록 총 관객수 합계가 높게 나타나는 경향이 있다.",
+    key="insight_top10_bar",
+)
+
+if user_insight_4:
+    st.info(f"💡 **이 그래프로 알 수 있는 것:** {user_insight_4}")
+else:
+    st.caption("위 입력 창에 그래프 분석 내용을 직접 입력해 보세요.")
+
+# ----------------------------------------------------
+# 구역 5: 월 × 요일별 일관객 합계 히트맵
+# ----------------------------------------------------
+st.header("📌 구역 5: 월 × 요일별 일관객 합계 분포 (히트맵)")
+
+# 1. 월과 요일 추출
+df_heatmap = df.copy()
+df_heatmap["월"] = df_heatmap["날짜"].dt.month.map(lambda x: f"{x}월")
+df_heatmap["요일"] = df_heatmap["날짜"].dt.day_name()
+
+# 요일 한글 변환 매핑 및 월~일 순서 정의
+day_map = {
+    "Monday": "월요일",
+    "Tuesday": "화요일",
+    "Wednesday": "수요일",
+    "Thursday": "목요일",
+    "Friday": "금요일",
+    "Saturday": "토요일",
+    "Sunday": "일요일",
+}
+days_order = [
+    "월요일",
+    "화요일",
+    "수요일",
+    "목요일",
+    "금요일",
+    "토요일",
+    "일요일",
+]
+months_order = [f"{m}월" for m in range(1, 13)]
+
+df_heatmap["요일"] = df_heatmap["요일"].map(day_map)
+
+# 2. 월 × 요일 피벗 테이블 생성 (일관객 합계)
+pivot_df = (
+    df_heatmap.pivot_table(
+        index="월", columns="요일", values="일관객", aggfunc="sum"
+    )
+    .reindex(index=months_order, columns=days_order)
+    .fillna(0)
+)
+
+# 3. Plotly 히트맵 생성 (진할수록 관객이 많아지도록 Reds/Viridis 계열 색상 설정)
+fig5 = px.imshow(
+    pivot_df,
+    labels=dict(x="요일", y="월", color="일관객 합계(명)"),
+    x=days_order,
+    y=months_order,
+    color_continuous_scale="Reds",  # 색이 진할수록 관객 수가 많음
+    title="월 × 요일별 일관객 합계 분포",
+    text_auto=",.0f",  # 셀 안에 관객수 수치 표기 (천 단위 쉼표)
+)
+
+# 마우스 호버(Hover) 시 세부 정보 포맷팅
+fig5.update_traces(
+    hovertemplate="<b>%{y} %{x}</b><br><b>일관객 합계</b>: %{z:,}명<extra></extra>"
+)
+
+# 레이아웃 설정
+fig5.update_layout(
+    xaxis_title="요일",
+    yaxis_title="월",
+)
+
+# 그래프 출력
+st.plotly_chart(fig5, use_container_width=True)
+
+# 4. 사용자가 직접 작성하는 '이 그래프로 알 수 있는 것' 영역
+user_insight_5 = st.text_input(
+    "📝 이 그래프로 알 수 있는 것 (직접 작성):",
+    placeholder="예: 연휴 및 성수기 시즌의 특정 요일(주말 등)에 관객 집중도가 극대화되는 것을 볼 수 있다.",
+    key="insight_heatmap",
+)
+
+if user_insight_5:
+    st.info(f"💡 **이 그래프로 알 수 있는 것:** {user_insight_5}")
 else:
     st.caption("위 입력 창에 그래프 분석 내용을 직접 입력해 보세요.")
