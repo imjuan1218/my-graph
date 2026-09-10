@@ -159,3 +159,71 @@ if user_insight_2:
     st.info(f"💡 **이 그래프로 알 수 있는 것:** {user_insight_2}")
 else:
     st.caption("위 입력 창에 그래프 분석 내용을 직접 입력해 보세요.")
+
+# ----------------------------------------------------
+# 구역 3: 날짜별 Top 10 관객수 합계 영역 그래프
+# ----------------------------------------------------
+st.header("📌 구역 3: 일별 박스오피스 TOP 10 총관객수 추이")
+
+# 1. 날짜별 일관객 합계 계산
+daily_total_df = (
+    df.groupby("날짜", as_index=False)["일관객"].sum().sort_values("날짜")
+)
+
+# 2. Plotly 영역 그래프(Area Chart) 생성
+fig3 = px.area(
+    daily_total_df,
+    x="날짜",
+    y="일관객",
+    title="일별 TOP 10 영화 관객수 합계 추이",
+    labels={"날짜": "날짜", "일관객": "10위권 총관객수(명)"},
+)
+
+# 마우스 호버(Hover) 시 세부 정보 포맷팅
+fig3.update_traces(
+    hovertemplate="<b>날짜</b>: %{x|%Y-%m-%d}<br><b>TOP 10 총관객수</b>: %{y:,}명<extra></extra>"
+)
+
+# 3. 관객수 합계 상위 3일 구하기
+top3_days = daily_total_df.nlargest(3, "일관객")
+
+# 4. 그래프 위에 최상위 3일 날짜 및 관객수 텍스트 표기 (주석/Annotation)
+for rank, (_, row) in enumerate(top3_days.iterrows(), start=1):
+    date_str = row["날짜"].strftime("%Y-%m-%d")
+    val_str = f"{row['일관객']:,}명"
+
+    fig3.add_annotation(
+        x=row["날짜"],
+        y=row["일관객"],
+        text=f"<b>🏆 {rank}위: {date_str}</b><br>({val_str})",
+        showarrow=True,
+        arrowhead=2,
+        ax=0,
+        ay=-40,  # 화살표 및 텍스트 위치를 점 상단으로 띄움
+        font=dict(size=12, color="crimson"),
+        bgcolor="white",
+        bordercolor="crimson",
+        borderwidth=1,
+    )
+
+# 레이아웃 설정
+fig3.update_layout(
+    xaxis_title="날짜",
+    yaxis_title="10위권 총관객수(명)",
+    hovermode="x unified",
+)
+
+# 그래프 출력
+st.plotly_chart(fig3, use_container_width=True)
+
+# 5. 사용자가 직접 작성하는 '이 그래프로 알 수 있는 것' 영역
+user_insight_3 = st.text_input(
+    "📝 이 그래프로 알 수 있는 것 (직접 작성):",
+    placeholder="예: 극장가 전체의 성수기(명절, 연휴 등) 피크 시점과 전체 관객 규모를 파악할 수 있다.",
+    key="insight_daily_total",
+)
+
+if user_insight_3:
+    st.info(f"💡 **이 그래프로 알 수 있는 것:** {user_insight_3}")
+else:
+    st.caption("위 입력 창에 그래프 분석 내용을 직접 입력해 보세요.")
