@@ -105,3 +105,57 @@ st.caption("이곳에는 월별/요일별 박스오피스 종합 추이 등 새�
 # ----------------------------------------------------
 st.header("📌 구역 2: (추가 예정 구역)")
 
+# ----------------------------------------------------
+# 구역 2: 일관객 합계 상위 5개 영화의 일관객 추이 비교
+# ----------------------------------------------------
+st.header("📌 구역 2: 관객수 TOP 5 영화의 일일 관객수 추이 비교")
+
+# 1. 일관객 합계(총 관객수) 기준 상위 5개 영화 선정
+top5_movies = (
+    df.groupby("영화명")["일관객"]
+    .sum()
+    .nlargest(5)
+    .index
+    .tolist()
+)
+
+# 2. 상위 5개 영화 데이터만 필터링 및 날짜순 정렬
+top5_df = df[df["영화명"].isin(top5_movies)].sort_values("날짜")
+
+# 3. Plotly 다중 선 그래프 생성 (color='영화명'으로 영화별 색상 구분)
+fig2 = px.line(
+    top5_df,
+    x="날짜",
+    y="일관객",
+    color="영화명",
+    title="총 관객수 상위 5개 영화의 일일 관객수 변화 비교",
+    labels={"날짜": "날짜", "일관객": "일일 관객수(명)", "영화명": "영화 제목"},
+    markers=True,
+)
+
+# 마우스 호버(Hover) 시 세부 정보 포맷팅
+fig2.update_traces(
+    hovertemplate="<b>영화명</b>: %{fullData.name}<br><b>날짜</b>: %{x|%Y-%m-%d}<br><b>일일 관객수</b>: %{y:,}명<extra></extra>"
+)
+
+# 레이아웃 설정 (범례 클릭 시 켜고 끌 수 있음)
+fig2.update_layout(
+    xaxis_title="날짜",
+    yaxis_title="일일 관객수(명)",
+    hovermode="x unified",
+)
+
+# 그래프 출력
+st.plotly_chart(fig2, use_container_width=True)
+
+# 4. 사용자가 직접 작성하는 '이 그래프로 알 수 있는 것' 영역
+user_insight_2 = st.text_input(
+    "📝 이 그래프로 알 수 있는 것 (직접 작성):",
+    placeholder="예: 흥행 상위 영화들의 흥행 유지 기간과 피크 시점을 비교해볼 수 있다.",
+    key="insight_top5",
+)
+
+if user_insight_2:
+    st.info(f"💡 **이 그래프로 알 수 있는 것:** {user_insight_2}")
+else:
+    st.caption("위 입력 창에 그래프 분석 내용을 직접 입력해 보세요.")
